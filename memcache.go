@@ -24,7 +24,7 @@ type entry struct {
 	value interface{}
 }
 
-// If maxItemSize is zero, the cache has no limit.
+//NewMemCache If maxItemSize is zero, the cache has no limit.
 //if maxItemSize is not zero, when cache's size beyond maxItemSize,start to swap
 func NewMemCache(maxItemSize int) *MemCache {
 	return &MemCache{
@@ -34,8 +34,8 @@ func NewMemCache(maxItemSize int) *MemCache {
 	}
 }
 
-//return the status of cache
-func (c *MemCache) Status() *CacheStatus{
+//Status return the status of cache
+func (c *MemCache) Status() *CacheStatus {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 	return &CacheStatus{
@@ -46,19 +46,20 @@ func (c *MemCache) Status() *CacheStatus{
 	}
 }
 
-//get value with key
+//Get value with key
 func (c *MemCache) Get(key string) (interface{}, bool) {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 	c.gets.Add(1)
 	if ele, hit := c.cache[key]; hit {
 		c.hits.Add(1)
+		c.cacheList.MoveToFront(ele)
 		return ele.Value.(*entry).value, true
 	}
 	return nil, false
 }
 
-//set a value with key
+//Set a value with key
 func (c *MemCache) Set(key string, value interface{}) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -80,6 +81,7 @@ func (c *MemCache) Set(key string, value interface{}) {
 	}
 }
 
+//Delete delete the key
 func (c *MemCache) Delete(key string) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -94,6 +96,7 @@ func (c *MemCache) Delete(key string) {
 	}
 }
 
+//RemoveOldest remove the oldest key
 func (c *MemCache) RemoveOldest() {
 	if c.cache == nil {
 		return
