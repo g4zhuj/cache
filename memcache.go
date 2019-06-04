@@ -98,6 +98,8 @@ func (c *MemCache) Delete(key string) {
 
 //RemoveOldest remove the oldest key
 func (c *MemCache) RemoveOldest() {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	if c.cache == nil {
 		return
 	}
