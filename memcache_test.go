@@ -4,16 +4,6 @@ import (
 	"testing"
 )
 
-type simpleStruct struct {
-	int
-	string
-}
-
-type complexStruct struct {
-	int
-	simpleStruct
-}
-
 var getTests = []struct {
 	name       string
 	keyToAdd   string
@@ -35,7 +25,7 @@ func TestSet(t *testing.T) {
 		if !ok {
 			t.Fatalf("expect key:%v ,value:%v", key, v)
 		} else if ok && val != v {
-			t.Fatalf("expect value:%v, get value:%v", key, v, val)
+			t.Fatalf("key:%v, expect value:%v, get value:%v", key, v, val)
 		}
 		t.Logf("value:%v ", val)
 	}

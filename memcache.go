@@ -19,7 +19,7 @@ type MemCache struct {
 	hits, gets  AtomicInt
 }
 
-type entry struct {
+type Entry struct {
 	key   interface{}
 	value interface{}
 }
@@ -35,10 +35,10 @@ func NewMemCache(maxItemSize int) *MemCache {
 }
 
 //Status return the status of cache
-func (c *MemCache) Status() *CacheStatus {
+func (c *MemCache) Status() *Status {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
-	return &CacheStatus{
+	return &Status{
 		MaxItemSize: c.maxItemSize,
 		CurrentSize: c.cacheList.Len(),
 		Gets:        c.gets.Get(),
@@ -54,7 +54,7 @@ func (c *MemCache) Get(key string) (interface{}, bool) {
 	if ele, hit := c.cache[key]; hit {
 		c.hits.Add(1)
 		c.cacheList.MoveToFront(ele)
-		return ele.Value.(*entry).value, true
+		return ele.Value.(*Entry).value, true
 	}
 	return nil, false
 }
@@ -63,21 +63,17 @@ func (c *MemCache) Get(key string) (interface{}, bool) {
 func (c *MemCache) Set(key string, value interface{}) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	if c.cache == nil {
-		c.cache = make(map[interface{}]*list.Element)
-		c.cacheList = list.New()
-	}
 
 	if ele, ok := c.cache[key]; ok {
 		c.cacheList.MoveToFront(ele)
-		ele.Value.(*entry).value = value
+		ele.Value.(*Entry).value = value
 		return
 	}
 
-	ele := c.cacheList.PushFront(&entry{key: key, value: value})
+	ele := c.cacheList.PushFront(&Entry{key: key, value: value})
 	c.cache[key] = ele
-	if c.maxItemSize != 0 && c.cacheList.Len() > c.maxItemSize {
-		c.RemoveOldest()
+	if c.maxItemSize > 0 && c.cacheList.Len() > c.maxItemSize {
+		c.removeOldest()
 	}
 }
 
@@ -85,26 +81,20 @@ func (c *MemCache) Set(key string, value interface{}) {
 func (c *MemCache) Delete(key string) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	if c.cache == nil {
-		return
-	}
 	if ele, ok := c.cache[key]; ok {
 		c.cacheList.Remove(ele)
-		key := ele.Value.(*entry).key
+		key := ele.Value.(*Entry).key
 		delete(c.cache, key)
 		return
 	}
 }
 
 //RemoveOldest remove the oldest key
-func (c *MemCache) RemoveOldest() {
-	if c.cache == nil {
-		return
-	}
+func (c *MemCache) removeOldest() {
 	ele := c.cacheList.Back()
 	if ele != nil {
 		c.cacheList.Remove(ele)
-		key := ele.Value.(*entry).key
+		key := ele.Value.(*Entry).key
 		delete(c.cache, key)
 	}
 }
